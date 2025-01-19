@@ -1,4 +1,5 @@
 <script>
+import { loadFont } from "../plugins/helper";
 export default {
   name: "Content",
   data() {
@@ -7,6 +8,7 @@ export default {
       audioDuration: 0,
       playing: false,
       currentSpeed: 1,
+      audioVolume: 100,
       startTime: 0,
       iframeStyle: {}
     };
@@ -97,15 +99,16 @@ export default {
       this.initIframe();
     }
     window.contentCom = this;
+    this.loadCustomFontFamil();
   },
   computed: {
     readingBook() {
-      return this.$store.state.readingBook;
+      return this.$store.getters.readingBook;
     },
     chapter() {
       return (
-        this.$store.state.readingBook.catalog[
-          this.$store.state.readingBook.index
+        this.$store.getters.readingBook.catalog[
+          this.$store.getters.readingBook.index
         ] || {}
       );
     },
@@ -167,6 +170,9 @@ export default {
     },
     windowSize() {
       return this.$store.state.windowSize;
+    },
+    currentCustomFontFamily() {
+      return this.$store.getters.currentCustomFontFamily;
     }
   },
   watch: {
@@ -184,6 +190,9 @@ export default {
       if (this.isEpub) {
         //
       }
+    },
+    currentCustomFontFamily() {
+      this.loadCustomFontFamil();
     }
   },
   methods: {
@@ -331,6 +340,38 @@ export default {
               }}
             ></i>
           </div>
+          <div class="book-operation">
+            <span
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center"
+              }}
+            >
+              <i
+                class={[
+                  "reader-iconfont",
+                  this.audioVolume > 0
+                    ? "reader-icon-volume"
+                    : "reader-icon-volume-off"
+                ]}
+                vOn:click_stop_prevent={() => {
+                  this.setAudioVolume(this.audioVolume > 0 ? 0 : 100);
+                }}
+                style={{ marginRight: this.audioVolume > 0 ? "15px" : "25px" }}
+              ></i>
+              <el-slider
+                vModel={this.audioVolume}
+                min={0}
+                max={100}
+                style={{ width: "180px" }}
+                show-tooltip={false}
+                vOn:change={val => {
+                  this.setAudioVolume(val);
+                }}
+              ></el-slider>
+            </span>
+          </div>
           <div
             class="book-info"
             style={{
@@ -343,7 +384,7 @@ export default {
             <div class="book-intro">
               <div class="title">{this.title}</div>
               <div class="subtitle">
-                {this.readingBook.bookName}
+                {this.readingBook.name}
                 {this.readingBook.author ? "•" : ""}
                 {this.readingBook.author}
               </div>
@@ -423,7 +464,7 @@ export default {
             i.replace(/([A-Z])/g, v => "-" + v.toLowerCase()) +
             ":" +
             this.containerStyle[i] +
-            ";";
+            " !important;";
         }
       }
       let pStyle = "";
@@ -433,9 +474,16 @@ export default {
             i.replace(/([A-Z])/g, v => "-" + v.toLowerCase()) +
             ":" +
             this.pStyle[i] +
-            ";";
+            " !important;";
         }
       }
+      pStyle +=
+        "font-family: " + this.containerStyle.fontFamily + " !important;";
+      pStyle += "font-size: " + this.containerStyle.fontSize + " !important;";
+      pStyle +=
+        "font-weight: " + this.containerStyle.fontWeight + " !important;";
+      pStyle += "color: " + this.containerStyle.color + " !important;";
+
       this.sendToIframe("setStyle", {
         style: `
         *::-webkit-scrollbar {
@@ -505,6 +553,14 @@ export default {
         }
       }
     },
+    setAudioVolume(val) {
+      if (!isNaN(val) && val !== Infinity) {
+        this.audioVolume = val;
+        if (this.$refs.audio) {
+          this.$refs.audio.volume = val / 100;
+        }
+      }
+    },
     ensureSeekTime(val) {
       this.startTime = val;
     },
@@ -524,30 +580,7 @@ export default {
       }
       if (init) {
         this.$refs.audio.load();
-
-        this.stateTimer && clearInterval(this.stateTimer);
-
-        this.stateTimer = setInterval(() => {
-          if (this.$refs.audio) {
-            let duration = this.$refs.audio.duration;
-            if (
-              this.$refs.audio.readyState >= 1 &&
-              !isNaN(duration) &&
-              duration !== Infinity &&
-              duration
-            ) {
-              clearInterval(this.stateTimer);
-              this.stateTimer = null;
-              this.audioDuration = parseInt(duration);
-              this.$refs.audio.playbackRate = this.currentSpeed;
-              this.$refs.audio.currentTime = this.startTime;
-              // 有时会失败（看浏览器）
-              if (this.autoPlay) {
-                this.$refs.audio.play();
-              }
-            }
-          }
-        }, 100);
+        this.computeDuration();
       }
       if (!init || this.autoPlay) {
         this.$refs.audio.play();
@@ -561,6 +594,33 @@ export default {
       this.autoPlay = true;
       this.$emit("nextChapter");
     },
+    computeDuration() {
+      if (!this.$refs.audio) {
+        setTimeout(() => {
+          this.computeDuration();
+        }, 100);
+        return;
+      }
+      let duration = this.$refs.audio.duration;
+      if (
+        this.$refs.audio.readyState >= 1 &&
+        !isNaN(duration) &&
+        duration !== Infinity &&
+        duration
+      ) {
+        this.audioDuration = parseInt(duration);
+        this.$refs.audio.playbackRate = this.currentSpeed;
+        this.$refs.audio.currentTime = this.startTime;
+        // 有时会失败（看浏览器）
+        if (this.autoPlay) {
+          this.$refs.audio.play();
+        }
+      } else {
+        setTimeout(() => {
+          this.computeDuration();
+        }, 50);
+      }
+    },
     onProgress() {
       // 记录缓存进度。触发事件包括缓存数据更新时的 progress 事件，以及各种播放动作会触发的 playing 事件
     },
@@ -572,7 +632,6 @@ export default {
     },
     onPlay() {
       this.playing = true;
-      this.stateTimer && clearInterval(this.stateTimer);
     },
     onPause() {
       this.playing = false;
@@ -583,13 +642,11 @@ export default {
       this.audioDuration = 0;
       this.autoPlay = true;
       this.$emit("nextChapter");
-      this.stateTimer && clearInterval(this.stateTimer);
     },
     onError(event) {
       // console.log(arguments);
       this.$message.error(event.toString());
       this.playing = false;
-      this.stateTimer && clearInterval(this.stateTimer);
     },
     onSeeked() {},
     onSeeking() {},
@@ -604,6 +661,14 @@ export default {
     },
     onWaiting() {
       // console.log("onWaiting", arguments);
+    },
+    loadCustomFontFamil() {
+      if (this.currentCustomFontFamily) {
+        loadFont(
+          this.currentCustomFontFamily.name,
+          this.currentCustomFontFamily.url
+        );
+      }
     }
   }
 };
@@ -689,6 +754,7 @@ h3.reading {
       display: inline-block;
       cursor: pointer;
       font-size: 24px;
+      line-height: 1;
     }
   }
 

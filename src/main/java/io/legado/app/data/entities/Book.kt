@@ -18,7 +18,7 @@ import kotlin.math.min
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@JsonIgnoreProperties("variableMap", "infoHtml", "tocHtml", "config", "rootDir", "readConfig", "localBook", "epub", "epubRootDir", "onLineTxt", "localTxt", "umd", "realAuthor", "unreadChapterNum", "folderName", "localFile", "kindList", "_bookDir", "bookDir")
+@JsonIgnoreProperties("variableMap", "infoHtml", "tocHtml", "config", "rootDir", "readConfig", "localBook", "epub", "epubRootDir", "onLineTxt", "localTxt", "umd", "realAuthor", "unreadChapterNum", "folderName", "localFile", "kindList", "_userNameSpace", "bookDir", "userNameSpace")
 data class Book(
         override var bookUrl: String = "",                   // 详情页Url(本地书源存储完整文件路径)
         var tocUrl: String = "",                    // 目录页Url (toc=table of Contents)
@@ -157,30 +157,30 @@ data class Book(
     }
 
     fun getLocalFile(): File {
-        if (isEpub() && originName.indexOf("localStore") < 0) {
-            // 非本地书仓的 epub文件
+        if (isEpub() && originName.indexOf("localStore") < 0 && originName.indexOf("webdav") < 0) {
+            // 非本地/webdav书仓的 epub文件
             return FileUtils.getFile(File(rootDir + originName), "index.epub")
         }
-        if (isCbz() && originName.indexOf("localStore") < 0) {
-            // 非本地书仓的 cbz文件
+        if (isCbz() && originName.indexOf("localStore") < 0 && originName.indexOf("webdav") < 0) {
+            // 非本地/webdav书仓的 cbz文件
             return FileUtils.getFile(File(rootDir + originName), "index.cbz")
         }
         return File(rootDir + originName)
     }
 
     @Transient
-    private var _bookDir: String = ""
+    private var _userNameSpace: String = ""
 
-    fun setBookDir(dir: String) {
-        if (dir.isNotEmpty() && !dir.endsWith(File.separator)) {
-            _bookDir = dir + File.separator
-        } else {
-            _bookDir = dir
-        }
+    fun setUserNameSpace(nameSpace: String) {
+        _userNameSpace = nameSpace
+    }
+
+    fun getUserNameSpace(): String {
+        return _userNameSpace
     }
 
     fun getBookDir(): String {
-        return _bookDir
+        return FileUtils.getPath(File(rootDir), "storage", "data", _userNameSpace, name + "_" + author)
     }
 
     fun getSplitLongChapter(): Boolean {

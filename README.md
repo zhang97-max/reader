@@ -2,13 +2,17 @@
 
 阅读3服务器版，不需要手机。
 
-在线体验 👉 [https://reader.htmake.com](https://reader.htmake.com)
-
 加入TG群(限时开放) 👉 [https://t.me/+pQ8HDlANPZ84ZWNl](https://t.me/+pQ8HDlANPZ84ZWNl)
 
 关注公众号，查看教程和书源👇
 
 ![](imgs/mpcode.png)
+
+[<img src="https://api.gitsponsors.com/api/badge/img?id=395543217" height="40">](https://api.gitsponsors.com/api/badge/link?p=ppZ0zuTTgsLoYQZH8aJTvjzXx/yZK5mPrAY6D2jK3v3ol2hv2LTdleOGoYCy1Gcce6EoqenDm9C0TNIeBFdN/nkCoeoV88oHZ4dzwEcuGP40/fIIKpJ9oR1N+uUh1Ok1qAjjsJk2GkQLuoJOC7gKIg==)
+
+> 注意❗️
+>
+> Reader 完整源码仅开放到 v2.5.4，新版本当前仅开放部分开源源码，见 https://github.com/hectorqin/reader-legado.
 
 <details><summary>免责声明（Disclaimer）</summary>
 阅读是一款提供网络文学搜索的工具，为广大网络文学爱好者提供一种方便、快捷舒适的试读体验。
@@ -23,6 +27,7 @@
 <details><summary>功能说明</summary>
   书源管理 <br/>
 - 书架管理 <br/>
+- 书架布局 <br/>
 - 搜索 <br/>
 - 书海 <br/>
 - 看书 <br/>
@@ -39,34 +44,23 @@
 - 支持漫画 <br/>
 - 支持音频 <br/>
 - 书源失效检测 <br/>
-- 导入本地TXT、EPUB、UMD格式的书籍 <br/>
+- 导入本地TXT、EPUB、UMD、PDF格式的书籍 <br/>
 - 书籍分组 <br/>
 - RSS订阅 <br/>
 - 定时更新书架 <br/>
 - 并发搜书 <br/>
 - 本地书仓 <br/>
+- 支持kindle阅读 <br/>
 </details>
 
 ## 下载与安装
 
 详见[文档](https://github.com/hectorqin/reader/blob/master/doc.md)
 
-## TODO
-
-- [x] 定时更新书架书籍章节
-- [x] 多源并发搜索书籍
-- [x] 并发更新书架章节
-- [x] 并发搜索书籍来源
-- [x] WebDav同步
-- [x] 导入本地书籍，支持epub
-- [ ] 完善接口文档
-- [x] 阅读3核心兼容。已最大可能兼容，不支持使用webview，不支持使用cookie、cache及调用原生java等高级Javascript功能
-- [x] 支持RSS订阅
-
 ## 问题
 
-- 部分使用了 `Javascript` 的书源可能会报错，不支持 `cookie` 和 `cache` 功能
-- 不支持使用了 `webview` 的书源
+- 部分使用了 `Javascript` 的书源可能会报错，如调用原生java等高级Javascript功能
+- `webview` 功能需要另外部署接口，不支持 `sourceRegex` 匹配资源响应
 - 不支持书源登录功能
 
 ## 感谢

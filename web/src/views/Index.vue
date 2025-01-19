@@ -133,7 +133,7 @@
               @click="toDetail(readingRecent)"
               :class="{ 'no-point': readingRecent.bookUrl == '' }"
             >
-              {{ readingRecent.bookName }}
+              {{ readingRecent.name }}
             </el-tag>
           </div>
         </div>
@@ -300,6 +300,12 @@
               v-if="$store.state.isSecureMode && $store.state.userInfo.username"
               @click="logout()"
               >注销</span
+            >
+            <span
+              class="right-text"
+              v-else
+              @click="$store.commit('setShowLogin', true)"
+              >登录</span
             >
           </div>
           <div class="setting-item" v-if="$store.state.showManagerMode">
@@ -722,6 +728,12 @@
           <span
             v-if="!isShowFailureBookSource"
             class="float-right span-btn"
+            @click="deleteBookSourceFile()"
+            >恢复默认</span
+          >
+          <span
+            v-if="!isShowFailureBookSource"
+            class="float-right span-btn"
             @click="exportBookSource()"
             >导出</span
           >
@@ -979,10 +991,13 @@
 
     <LocalStore
       v-model="showLocalStoreManageDialog"
-      @importFromLocalStorePreview="importMultiBooks"
+      @importFromLocalPathPreview="importMultiBooks"
     ></LocalStore>
 
-    <WebDAV v-model="showWebDAVManageDialog"></WebDAV>
+    <WebDAV
+      v-model="showWebDAVManageDialog"
+      @importFromLocalPathPreview="importMultiBooks"
+    ></WebDAV>
   </div>
 </template>
 
@@ -1164,9 +1179,15 @@ export default {
     window.shelfPage = this;
     this.init();
     eventBus.$on("onSourceFileChange", (event, isRssSource) => {
+      if (this._inactive) {
+        return;
+      }
       this.onSourceFileChange(event, isRssSource);
     });
     eventBus.$on("editBook", (book, isAdd, onSuccess) => {
+      if (this._inactive) {
+        return;
+      }
       this.editBook(book, isAdd, onSuccess);
     });
   },
@@ -1449,13 +1470,15 @@ export default {
         // return;
       }
       this.$store.commit("setReadingBook", {
-        bookName: book.bookName || book.name,
+        name: book.name,
         bookUrl: book.bookUrl,
         index: book.index ?? book.durChapterIndex ?? 0,
         type: book.type,
         coverUrl: this.getBookCoverUrl(book),
+        tocUrl: book.tocUrl,
         author: book.author,
         origin: book.origin,
+        originName: book.originName,
         latestChapterTitle: book.latestChapterTitle,
         intro: book.intro
       });
@@ -2475,13 +2498,36 @@ export default {
         res => {
           if (res.data.isSuccess) {
             //
-            this.loadBookSource(true);
             this.$message.success("清空书源成功");
             this.loadBookSource(true);
           }
         },
         error => {
           this.$message.error("清空书源失败 " + (error && error.toString()));
+        }
+      );
+    },
+    async deleteBookSourceFile() {
+      const res = await this.$confirm(`确认要恢复默认书源吗?`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }).catch(() => {
+        return false;
+      });
+      if (!res) {
+        return;
+      }
+      Axios.post(this.api + "/deleteBookSourcesFile").then(
+        res => {
+          if (res.data.isSuccess) {
+            //
+            this.$message.success("恢复默认书源成功");
+            this.loadBookSource(true);
+          }
+        },
+        error => {
+          this.$message.error("操作失败 " + (error && error.toString()));
         }
       );
     },
@@ -2775,11 +2821,11 @@ export default {
       return this.$store.state.connected ? "success" : "danger";
     },
     readingRecent() {
-      return this.$store.state.readingBook &&
-        this.$store.state.readingBook.bookName
-        ? this.$store.state.readingBook
+      return this.$store.getters.readingBook &&
+        this.$store.getters.readingBook.name
+        ? this.$store.getters.readingBook
         : {
-            bookName: "尚无阅读记录",
+            name: "尚无阅读记录",
             bookUrl: "",
             index: 0
           };

@@ -21,6 +21,7 @@ import com.htmake.reader.api.controller.RssSourceController
 import com.htmake.reader.api.controller.UserController
 import com.htmake.reader.api.controller.WebdavController
 import com.htmake.reader.api.controller.ReplaceRuleController
+import com.htmake.reader.api.controller.BookmarkController
 import com.htmake.reader.utils.error
 import com.htmake.reader.utils.success
 import com.htmake.reader.utils.getStorage
@@ -133,6 +134,7 @@ class YueduApi : RestVerticle() {
             onHandlerError(ctx, error)
         }
         val replaceRuleController = ReplaceRuleController(coroutineContext)
+        val bookmarkController = BookmarkController(coroutineContext)
 
         /** 书源模块 */
         router.post("/reader3/saveBookSource").coroutineHandler { bookSourceController.saveBookSource(it) }
@@ -155,6 +157,8 @@ class YueduApi : RestVerticle() {
 
         // 设置默认书源
         router.post("/reader3/setAsDefaultBookSources").coroutineHandler { bookSourceController.setAsDefaultBookSources(it) }
+        router.post("/reader3/deleteUserBookSource").coroutineHandler { bookSourceController.deleteUserBookSource(it) }
+        router.post("/reader3/deleteBookSourcesFile").coroutineHandler { bookSourceController.deleteBookSourcesFile(it) }
 
         /** 书籍模块 */
         // 书架
@@ -224,6 +228,7 @@ class YueduApi : RestVerticle() {
         router.get("/reader3/getBookGroups").coroutineHandler { bookController.getBookGroups(it) }
         router.post("/reader3/saveBookGroup").coroutineHandler { bookController.saveBookGroup(it) }
         router.post("/reader3/deleteBookGroup").coroutineHandler { bookController.deleteBookGroup(it) }
+        router.post("/reader3/saveBookGroupOrder").coroutineHandler { bookController.saveBookGroupOrder(it) }
 
         // 书仓功能
         // 获取书仓文件列表
@@ -233,8 +238,8 @@ class YueduApi : RestVerticle() {
         // 删除书仓文件
         router.post("/reader3/deleteLocalStoreFile").coroutineHandler { bookController.deleteLocalStoreFile(it) }
         router.post("/reader3/deleteLocalStoreFileList").coroutineHandler { bookController.deleteLocalStoreFileList(it) }
-        // 从书仓导入
-        router.post("/reader3/importFromLocalStorePreview").coroutineHandler { bookController.importFromLocalStorePreview(it) }
+        // 从本地书仓/webdav导入
+        router.post("/reader3/importFromLocalPathPreview").coroutineHandler { bookController.importFromLocalPathPreview(it) }
         // 上传文件到书仓
         router.post("/reader3/uploadFileToLocalStore").coroutineHandler { bookController.uploadFileToLocalStore(it) }
 
@@ -251,6 +256,10 @@ class YueduApi : RestVerticle() {
         // 导出书籍
         router.post("/reader3/exportBook").coroutineHandlerWithoutRes { bookController.exportBook(it) }
         router.get("/reader3/exportBook").coroutineHandlerWithoutRes { bookController.exportBook(it) }
+
+        // 全文搜索
+        router.get("/reader3/searchBookContent").coroutineHandler { bookController.searchBookContent(it) }
+        router.post("/reader3/searchBookContent").coroutineHandler { bookController.searchBookContent(it) }
 
         /** 用户模块 */
         // 上传文件
@@ -331,6 +340,12 @@ class YueduApi : RestVerticle() {
         router.post("/reader3/deleteReplaceRule").coroutineHandler { replaceRuleController.deleteReplaceRule(it) }
         router.post("/reader3/deleteReplaceRules").coroutineHandler { replaceRuleController.deleteReplaceRules(it) }
 
+        /** 书签模块 */
+        router.get("/reader3/getBookmarks").coroutineHandler { bookmarkController.getBookmarks(it) }
+        router.post("/reader3/saveBookmark").coroutineHandler { bookmarkController.saveBookmark(it) }
+        router.post("/reader3/saveBookmarks").coroutineHandler { bookmarkController.saveBookmarks(it) }
+        router.post("/reader3/deleteBookmark").coroutineHandler { bookmarkController.deleteBookmark(it) }
+        router.post("/reader3/deleteBookmarks").coroutineHandler { bookmarkController.deleteBookmarks(it) }
     }
 
     suspend fun setupPort() {
